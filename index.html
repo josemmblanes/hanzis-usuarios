@@ -44,6 +44,25 @@
   }
   .main { flex: 1; width: 100%; padding: 20px 16px 48px; box-sizing: border-box; }
 
+  /* Pantalla de Login */
+  .login-container {
+    width: 100%; max-width: 380px;
+    margin: 40px auto 0 auto;
+    padding: 24px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(192,132,252,0.2);
+    border-radius: 20px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .login-input {
+    width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(192,132,252,0.25);
+    border-radius: 12px; padding: 14px 16px; color: #f0e8fe; font-size: 15px; outline: none;
+  }
+  .login-input::placeholder { color: rgba(240,232,254,0.35); }
+  .error-message {
+    color: #ff6b6b; font-size: 13px; text-align: center; font-weight: 500;
+  }
+
   /* Selección de cursos */
   .course-btn {
     width: 100%; max-width: 380px;
@@ -228,7 +247,6 @@
   .word-top-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
   .word-course-tag { font-size: 14px; color: #b08bf8; font-weight: 700; white-space: nowrap; }
   
-  /* Ajuste para que el contenedor Hanzi sea clicable con buen tamaño */
   .word-hanzi { font-size: 32px; display: inline-flex; align-items: center; justify-content: center; font-weight: 500; line-height: 1.1; cursor: pointer; }
   .word-pinyin { color: #c084fc; font-size: 15px; font-weight: 600; white-space: nowrap; }
   .word-meaning { font-size: 14px; color: rgba(240,232,254,0.7); line-height: 1.4; word-break: break-word; }
@@ -242,7 +260,7 @@
   }
   .play-icon-btn:active { transform: scale(0.95); }
 
-  /* NUEVO: Modal estilizado de trazos (Hanzi Writer) */
+  /* Modal de trazos (Hanzi Writer) */
   .writer-modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(15, 7, 30, 0.85); backdrop-filter: blur(8px);
@@ -259,7 +277,6 @@
   .writer-modal-title { font-size: 16px; font-weight: 700; color: #c084fc; }
   .writer-close-btn { background: transparent; border: none; color: rgba(240,232,254,0.5); font-size: 22px; cursor: pointer; }
   
-  /* Selector de pestañas para palabras compuestas (varios caracteres) */
   .writer-tabs { display: flex; gap: 6px; width: 100%; overflow-x: auto; padding-bottom: 4px; justify-content: center; }
   .writer-tab {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
@@ -267,7 +284,6 @@
   }
   .writer-tab.active { background: rgba(192,132,252,0.25); border-color: #c084fc; color: white; font-weight: 700; }
 
-  /* Lienzo del SVG */
   .writer-canvas-holder {
     background: #190a35; border: 1px solid rgba(192,132,252,0.2); border-radius: 16px;
     width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden;
@@ -310,6 +326,53 @@
 </div>
 
 <script>
+// ================= SUPABASE CLIENTE CONFIGURACIÓN =================
+const SUPABASE_URL = "https://qvmxxdayaimvrlgzehkxx.supabase.co"; 
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2bXh4ZHlhaW12cmxnemVoa3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MTMyMjIsImV4cCI6MjA5ODM4OTIyMn0.camm629SOGBQzMpx9C7-H31pDkd9i9jrVEqeTv6RDTI";
+
+async function supabaseRequest(urlSuffix, method = "GET", body = null) {
+  const headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json"
+  };
+  const options = { method, headers };
+  if (body) options.body = JSON.stringify(body);
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${urlSuffix}`, options);
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.message || `Error HTTP: ${response.status}`);
+  }
+  return response.status !== 204 ? await response.json() : null;
+}
+
+async function dbAutenticarUsuario(nick, password) {
+  const data = await supabaseRequest(`rpc/registrar_usuario`, "POST", { p_nick: nick, p_password: password });
+  return data; 
+}
+
+async function dbObtenerPesos(usuarioId) {
+  const data = await supabaseRequest(`progresos_hanzis?usuario_id=eq.${usuarioId}`, "GET");
+  if (data && data.length > 0) return data[0].pesos || {};
+  return {};
+}
+
+async function dbGuardarPesos(usuarioId, pesos) {
+  // Utilizamos un comando de Upsert (guardar o actualizar si ya existe) mediante POST y Prefer resolution
+  const headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    "Prefer": "resolution=merge"
+  };
+  await fetch(`${SUPABASE_URL}/rest/v1/progresos_hanzis`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ usuario_id: usuarioId, pesos: pesos, actualizado_en: new Date().toISOString() })
+  });
+}
+
+// ================= VARIABLES Y DATOS DEL CURSO =================
 const COURSE_FILES = [
   { id: "HSK1",   file: "data/HSK1.json",   label: "Curso 1" },
   { id: "HSK2",   file: "data/HSK2.json",   label: "Curso 2" },
@@ -321,13 +384,8 @@ const COURSE_FILES = [
 ];
 
 const COURSE_LEVEL_LABELS = {
-  "HSK1": "HSK 1",
-  "HSK2": "HSK 2",
-  "HSK3_1": "HSK 3",
-  "HSK3_2": "HSK 3",
-  "HSK4_1": "HSK 4",
-  "HSK4_2": "HSK 4",
-  "HSK4_3": "HSK 4"
+  "HSK1": "HSK 1", "HSK2": "HSK 2", "HSK3_1": "HSK 3", "HSK3_2": "HSK 3",
+  "HSK4_1": "HSK 4", "HSK4_2": "HSK 4", "HSK4_3": "HSK 4"
 };
 
 const TONE_MAP = {
@@ -340,9 +398,7 @@ const TONE_MAP = {
 const TONE_COLORS = { "1":"#ff2a2a","2":"#ffb000","3":"#27ae60","4":"#2980b9","0":"#a78bfa" };
 
 function getToneOfSyllable(syll) {
-  for (const ch of syll) {
-    if (TONE_MAP[ch] !== undefined) return TONE_MAP[ch];
-  }
+  for (const ch of syll) { if (TONE_MAP[ch] !== undefined) return TONE_MAP[ch]; }
   return 0;
 }
 
@@ -402,20 +458,14 @@ if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !=
   speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); };
 }
 
-const STORAGE_KEY = "hanzis-weights";
-
-function loadWeights() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) { return {}; }
-}
-function saveWeights(weights) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weights)); } catch (e) {}
-}
-
+// ================= ESTADO GLOBAL =================
 const state = {
-  screen: "loading",        
+  screen: "login",          
+  usuario_id: null,         
+  usuario_nick: "",         
+  loginError: "",           
+  txtNick: "",              
+  txtPassword: "",          
   allWords: [],              
   availableCourses: [],       
   selectedCourses: [],
@@ -450,13 +500,34 @@ async function loadAllCourses() {
   return results;
 }
 
-async function init() {
-  state.persistedWeights = loadWeights();
-  const courses = await loadAllCourses();
-  state.availableCourses = courses;
-  state.allWords = courses.flatMap(c => c.words);
-  state.selectedCourses = courses.map(c => c.id); 
-  state.screen = state.availableCourses.length ? "course-select" : "error";
+async function iniciarSesion() {
+  if (!state.txtNick.trim() || !state.txtPassword.trim()) {
+    state.loginError = "Por favor, rellena todos los campos.";
+    render();
+    return;
+  }
+  state.loginError = "";
+  try {
+    const res = await dbAutenticarUsuario(state.txtNick.trim(), state.txtPassword.trim());
+    if (res && res.v_success) {
+      state.usuario_id = res.v_id;
+      state.usuario_nick = res.v_nick;
+      state.screen = "loading";
+      render();
+      
+      state.persistedWeights = await dbObtenerPesos(state.usuario_id);
+      const courses = await loadAllCourses();
+      state.availableCourses = courses;
+      state.allWords = courses.flatMap(c => c.words);
+      state.selectedCourses = courses.map(c => c.id); 
+      state.screen = state.availableCourses.length ? "course-select" : "error";
+    } else {
+      state.loginError = res.v_message || "Contraseña incorrecta o error de acceso.";
+    }
+  } catch (e) {
+    state.loginError = "Error de conexión con el servidor.";
+    console.error(e);
+  }
   render();
 }
 
@@ -512,7 +583,7 @@ function startQuiz() {
   render();
 }
 
-function answerQuiz(optIdx) {
+async function answerQuiz(optIdx) {
   if (state.quiz.selected !== null) return;
   const words = state.words;
   const wordIdx = state.quiz.queue[state.quiz.pos];
@@ -529,7 +600,8 @@ function answerQuiz(optIdx) {
     state.weights[wordIdx] = Math.min(5, (state.weights[wordIdx] || 1) + 2);
   }
   state.persistedWeights[wordKey(current)] = state.weights[wordIdx];
-  saveWeights(state.persistedWeights);
+  
+  try { await dbGuardarPesos(state.usuario_id, state.persistedWeights); } catch(e) {}
 
   state.quiz.total++;
   render();
@@ -548,7 +620,7 @@ function answerQuiz(optIdx) {
   }, 1600);
 }
 
-/* LÓGICA DE MANEJO DE HANZI WRITER (TRAZOS) */
+/* HANZI WRITER INTERACTION */
 let currentWriterInstance = null;
 let currentActiveChar = "";
 
@@ -589,33 +661,18 @@ function loadHanziWriterChar(char) {
   document.getElementById("writer-target").innerHTML = "";
   
   currentWriterInstance = HanziWriter.create('writer-target', char, {
-    width: 180,
-    height: 180,
-    padding: 15,
-    strokeColor: '#c084fc',
-    radicalColor: '#f43f5e',
-    outlineColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: '#190a35',
-    showOutline: true,
-    delayBetweenLoops: 1000
+    width: 180, height: 180, padding: 15,
+    strokeColor: '#c084fc', radicalColor: '#f43f5e',
+    outlineColor: 'rgba(255,255,255,0.08)', backgroundColor: '#190a35',
+    showOutline: true, delayBetweenLoops: 1000
   });
-  
   currentWriterInstance.animateCharacter();
 }
 
-function triggerStrokeAnim() {
-  if (currentWriterInstance) {
-    currentWriterInstance.cancelQuiz();
-    currentWriterInstance.animateCharacter();
-  }
-}
+function triggerStrokeAnim() { if (currentWriterInstance) { currentWriterInstance.cancelQuiz(); currentWriterInstance.animateCharacter(); } }
+function triggerStrokeQuiz() { if (currentWriterInstance) { currentWriterInstance.quiz(); } }
 
-function triggerStrokeQuiz() {
-  if (currentWriterInstance) {
-    currentWriterInstance.quiz();
-  }
-}
-
+// ================= MOTOR DOM DINÁMICO =================
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -655,11 +712,7 @@ function coloredHanziEl(hanzi, tone, size) {
 function renderVoiceControls() {
   const selectVoz = el("select", {
     class: "voice-select",
-    onchange: (e) => {
-      selectedVoiceType = e.target.value;
-      localStorage.setItem("hanzi-voice-type", selectedVoiceType);
-      speak(VOICE_SAMPLE_WORD);
-    }
+    onchange: (e) => { selectedVoiceType = e.target.value; localStorage.setItem("hanzi-voice-type", selectedVoiceType); speak(VOICE_SAMPLE_WORD); }
   }, [
     el("option", { value: "youdao", selected: selectedVoiceType === "youdao" ? "selected" : null }, "👩‍💼 Voz Estándar"),
     el("option", { value: "fluida", selected: selectedVoiceType === "fluida" ? "selected" : null }, "👩 Voz Fluida"),
@@ -671,33 +724,43 @@ function renderVoiceControls() {
   const sliderSpeed = el("input", {
     type: "range", min: "0.5", max: "2.0", step: "0.05", class: "speed-slider",
     value: selectedVoiceSpeed.toString(),
-    oninput: (e) => {
-      selectedVoiceSpeed = parseFloat(e.target.value);
-      speedValLabel.textContent = selectedVoiceSpeed.toFixed(2) + "x";
-      localStorage.setItem("hanzi-voice-speed", selectedVoiceSpeed.toString());
-    },
+    oninput: (e) => { selectedVoiceSpeed = parseFloat(e.target.value); speedValLabel.textContent = selectedVoiceSpeed.toFixed(2) + "x"; localStorage.setItem("hanzi-voice-speed", selectedVoiceSpeed.toString()); },
     onchange: () => speak(VOICE_SAMPLE_WORD)
   });
 
   return el("div", { class: "voice-controls-panel" }, [
-    el("div", { class: "voice-control-row" }, [
-      el("span", { class: "voice-label" }, "Tipo de voz:"),
-      selectVoz
-    ]),
-    el("div", { class: "voice-control-row" }, [
-      el("span", { class: "voice-label" }, "Velocidad:"),
-      el("div", { class: "speed-container" }, [sliderSpeed, speedValLabel])
-    ])
+    el("div", { class: "voice-control-row" }, [el("span", { class: "voice-label" }, "Tipo de voz:"), selectVoz]),
+    el("div", { class: "voice-control-row" }, [el("span", { class: "voice-label" }, "Velocidad:"), el("div", { class: "speed-container" }, [sliderSpeed, speedValLabel])])
   ]);
 }
 
+// ================= RENDERIZADO CENTRAL DE PANTALLAS =================
 function render() {
   const app = document.getElementById("app");
   app.innerHTML = "";
 
+  if (state.screen === "login") {
+    const main = el("div", { class: "main center-col", style: "padding-top:40px;" });
+    main.appendChild(el("div", { class: "hero-emoji" }, "👋"));
+    main.appendChild(el("div", { class: "hero-label" }, "¡Bienvenido a Hanzis!"));
+    main.appendChild(el("div", { class: "hero-sub" }, "Introduce tu Nick y contraseña. Si no tienes cuenta, se creará una nueva automáticamente."));
+
+    const loginBox = el("div", { class: "login-container" }, [
+      el("input", { class: "login-input", type: "text", placeholder: "Tu apodo / Nick...", value: state.txtNick, oninput: (e) => state.txtNick = e.target.value }),
+      el("input", { class: "login-input", type: "password", placeholder: "Contraseña...", value: state.txtPassword, oninput: (e) => state.txtPassword = e.target.value }),
+      state.loginError ? el("div", { class: "error-message" }, state.loginError) : null,
+      el("button", { class: "primary-btn", style: "margin-top:8px;", onclick: iniciarSesion }, "Entrar / Registrarse")
+    ]);
+    
+    main.appendChild(loginBox);
+    app.appendChild(header("Hanzis", "Iniciar Sesión"));
+    app.appendChild(main);
+    return;
+  }
+
   if (state.screen === "loading") {
     app.appendChild(el("div", { class: "main center-col", style: "padding-top:80px" },
-      el("div", { style: "color:rgba(240,232,254,0.5);font-size:14px" }, "Cargando vocabulario…")
+      el("div", { style: "color:rgba(240,232,254,0.5);font-size:14px" }, "Sincronizando datos con la nube…")
     ));
     return;
   }
@@ -713,7 +776,7 @@ function render() {
   if (state.screen === "course-select") {
     const main = el("div", { class: "main center-col" });
     main.appendChild(el("div", { class: "hero-emoji" }, "选择"));
-    main.appendChild(el("div", { class: "hero-label" }, "¿Qué curso quieres repasar?"));
+    main.appendChild(el("div", { class: "hero-label" }, `¡Hola, ${state.usuario_nick}! ¿Qué curso repasar?`));
     main.appendChild(el("div", { class: "hero-sub" }, "Puedes elegir uno o varios"));
 
     const list = el("div", { style: "width:100%" });
@@ -721,12 +784,7 @@ function render() {
       const active = state.selectedCourses.includes(c.id);
       const btn = el("button", {
         class: "course-btn" + (active ? " active" : ""),
-        onclick: () => {
-          state.selectedCourses = active
-            ? state.selectedCourses.filter(x => x !== c.id)
-            : [...state.selectedCourses, c.id];
-          render();
-        }
+        onclick: () => { state.selectedCourses = active ? state.selectedCourses.filter(x => x !== c.id) : [...state.selectedCourses, c.id]; render(); }
       }, [
         el("div", { style: "display:flex;align-items:center" }, [
           el("div", { class: "checkbox" + (active ? " active" : "") }, active ? "✓" : ""),
@@ -737,25 +795,16 @@ function render() {
       list.appendChild(btn);
     });
     main.appendChild(list);
-
     main.appendChild(renderVoiceControls());
-    
-    // Crédito añadido de forma dinámica en la parte inferior de la pantalla inicial
     main.appendChild(el("div", { class: "credit-text" }, "por obra de José Mª Martínez Blanes"));
 
     const totalSel = state.allWords.filter(w => state.selectedCourses.includes(w._course)).length;
     main.appendChild(el("button", {
-      class: "primary-btn",
-      disabled: state.selectedCourses.length === 0 ? "disabled" : null,
-      onclick: () => {
-        if (state.selectedCourses.length === 0) return;
-        state.selectedTopic = null;
-        state.screen = "topic-select";
-        render();
-      }
+      class: "primary-btn", disabled: state.selectedCourses.length === 0 ? "disabled" : null,
+      onclick: () => { if (state.selectedCourses.length === 0) return; state.selectedTopic = null; state.screen = "topic-select"; render(); }
     }, state.selectedCourses.length === 0 ? "Elige al menos un curso" : `Continuar (${totalSel} palabras)`));
 
-    app.appendChild(header("Hanzis", state.allWords.length + " palabras totales"));
+    app.appendChild(header("Hanzis", state.allWords.length + " palabras", () => { state.screen = "login"; render(); }));
     app.appendChild(main);
     return;
   }
@@ -768,40 +817,25 @@ function render() {
 
     const courseWords = getFilteredWords();
     const topics = getAvailableTopics();
-
     const list = el("div", { style: "width:100%" });
 
-    list.appendChild(el("button", {
-      class: "menu-btn",
-      onclick: () => startStudyWithTopic(null)
-    }, [
+    list.appendChild(el("button", { class: "menu-btn", onclick: () => startStudyWithTopic(null) }, [
       el("span", { class: "menu-icon" }, "📚"),
-      el("div", {}, [
-        el("div", { class: "menu-title" }, "Todos los temas"),
-        el("div", { class: "menu-desc" }, courseWords.length + " palabras · curso completo"),
-      ]),
+      el("div", {}, [el("div", { class: "menu-title" }, "Todos los temas"), el("div", { class: "menu-desc" }, courseWords.length + " palabras · curso completo")])
     ]));
 
     topics.forEach(tema => {
       const count = courseWords.filter(w => w.tema === tema).length;
-      list.appendChild(el("button", {
-        class: "menu-btn",
-        onclick: () => startStudyWithTopic(tema)
-      }, [
+      list.appendChild(el("button", { class: "menu-btn", onclick: () => startStudyWithTopic(tema) }, [
         el("span", { class: "menu-icon" }, "🏷"),
-        el("div", {}, [
-          el("div", { class: "menu-title" }, tema),
-          el("div", { class: "menu-desc" }, count + " palabras"),
-        ]),
+        el("div", {}, [el("div", { class: "menu-title" }, tema), el("div", { class: "menu-desc" }, count + " palabras")])
       ]));
     });
 
     if (topics.length === 0) {
       list.appendChild(el("div", { class: "warning-text" }, "Los cursos elegidos no tienen el campo \"tema\" en sus datos · usa \"Todos los temas\""));
     }
-
     main.appendChild(list);
-
     app.appendChild(header("Hanzis", courseWords.length + " palabras", () => { state.screen = "course-select"; render(); }));
     app.appendChild(main);
     return;
@@ -816,36 +850,32 @@ function render() {
 
     const items = [
       { id: "flashcard", icon: "🎴", title: "Tarjetas Flash", desc: "Escucha y aprende con tarjetas" },
-      { id: "quiz", icon: "🎯", title: "Quiz con Refuerzo", desc: "Tus fallos se recuerdan entre sesiones" },
+      { id: "quiz", icon: "🎯", title: "Quiz con Refuerzo", desc: "Tus fallos se recuerdan en tu cuenta" },
       { id: "browse", icon: "📖", title: "Vocabulario completo", desc: "Explora y escucha todas las palabras" },
     ];
     items.forEach(item => {
       main.appendChild(el("button", {
-        class: "menu-btn",
-        onclick: () => { state.screen = item.id; if (item.id === "quiz") startQuiz(); else render(); }
+        class: "menu-btn", onclick: () => { state.screen = item.id; if (item.id === "quiz") startQuiz(); else render(); }
       }, [
         el("span", { class: "menu-icon" }, item.icon),
-        el("div", {}, [
-          el("div", { class: "menu-title" }, item.title),
-          el("div", { class: "menu-desc" }, item.desc),
-        ]),
+        el("div", {}, [el("div", { class: "menu-title" }, item.title), el("div", { class: "menu-desc" }, item.desc)])
       ]));
     });
 
     const reinforced = Object.values(state.weights).filter(w => w > 1).length;
     if (reinforced > 0) {
-      main.appendChild(el("div", { class: "warning-text" }, `⚠ ${reinforced} palabra(s) con refuerzo pendiente (guardado)`));
+      main.appendChild(el("div", { class: "warning-text" }, `⚠ ${reinforced} palabra(s) con refuerzo pendiente (sincronizado)`));
     }
 
     main.appendChild(el("button", {
       class: "footer-link",
-      onclick: () => {
+      onclick: async () => {
         state.persistedWeights = {};
-        saveWeights({});
+        try { await dbGuardarPesos(state.usuario_id, {}); } catch(e) {}
         state.words.forEach((_, i) => { state.weights[i] = 1; });
         render();
       }
-    }, "Borrar progreso guardado"));
+    }, "Borrar progreso guardado en la nube"));
 
     app.appendChild(header("Hanzis", state.words.length + " palabras", () => { state.screen = "topic-select"; render(); }));
     app.appendChild(main);
@@ -860,11 +890,8 @@ function render() {
     const card = el("div", { class: "flashcard" + (state.flipped ? " flipped" : ""), onclick: () => { state.flipped = !state.flipped; render(); } });
     card.appendChild(coloredHanziEl(word.hanzi, word.tone, 56));
     if (state.showPinyin || state.flipped) card.appendChild(el("div", { class: "pinyin-text" }, word.pinyin));
-    if (state.flipped) {
-      card.appendChild(el("div", { class: "meaning-text" }, word.meaning));
-    } else {
-      card.appendChild(el("div", { class: "hint-text" }, "Toca para ver el significado o el Hanzi para ver los trazos"));
-    }
+    if (state.flipped) { card.appendChild(el("div", { class: "meaning-text" }, word.meaning)); } 
+    else { card.appendChild(el("div", { class: "hint-text" }, "Toca para ver el significado o el Hanzi para ver los trazos")); }
 
     const controls = el("div", { class: "row-controls" }, [
       el("button", { class: "ctrl-btn", onclick: () => { state.cardIndex = (state.cardIndex - 1 + state.shuffled.length) % state.shuffled.length; state.flipped = false; render(); } }, "←"),
@@ -877,11 +904,7 @@ function render() {
         state.showPinyin ? "🔤 Ocultar Pinyin" : "🔤 Mostrar Pinyin")
     );
 
-    main.appendChild(card);
-    main.appendChild(controls);
-    main.appendChild(pinyinToggle);
-    main.appendChild(renderVoiceControls());
-
+    main.appendChild(card); main.appendChild(controls); main.appendChild(pinyinToggle); main.appendChild(renderVoiceControls());
     app.appendChild(header("Tarjetas Flash", (state.cardIndex + 1) + "/" + state.shuffled.length, () => { state.screen = "menu"; render(); }));
     app.appendChild(main);
     return;
@@ -897,12 +920,9 @@ function render() {
       const reinforced = Object.values(state.weights).filter(w => w > 1).length;
       main.appendChild(el("div", { class: "center-col", style: "padding-top:48px" }, [
         el("div", { style: "font-size:64px" }, emoji),
-        el("div", { style: "font-size:46px;font-weight:700;color:#c084fc" }, [
-          state.quiz.score.toString(),
-          el("span", { style: "font-size:22px;color:rgba(240,232,254,0.4)" }, "/" + state.quiz.total),
-        ]),
+        el("div", { style: "font-size:46px;font-weight:700;color:#c084fc" }, [state.quiz.score.toString(), el("span", { style: "font-size:22px;color:rgba(240,232,254,0.4)" }, "/" + state.quiz.total)]),
         reinforced > 0 ? el("div", { style: "background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.3);border-radius:12px;padding:10px 20px;font-size:13px;color:#c084fc" },
-          `${reinforced} palabra(s) con refuerzo guardado · seguirán apareciendo más, incluso si cierras la app`) : null,
+          `${reinforced} palabra(s) con refuerzo guardado · sincronizado en la nube de tu cuenta`) : null,
         el("button", { class: "primary-btn", style: "max-width:300px", onclick: startQuiz }, "Otro intento"),
         el("button", { class: "footer-link", onclick: () => { state.screen = "menu"; render(); } }, "Menú"),
       ]));
@@ -919,8 +939,7 @@ function render() {
     const quizLen = Math.min(20, words.length);
 
     main.appendChild(el("div", { class: "progress-text" }, `Pregunta ${state.quiz.total + 1} de ${quizLen}`));
-    main.appendChild(el("div", { class: "progress-bar-bg" },
-      el("div", { class: "progress-bar-fill", style: `width:${(state.quiz.total / quizLen) * 100}%` })));
+    main.appendChild(el("div", { class: "progress-bar-bg" }, el("div", { class: "progress-bar-fill", style: `width:${(state.quiz.total / quizLen) * 100}%` })));
 
     const card = el("div", { class: "quiz-card" + (isAnswered ? (wasCorrect ? " correct" : " wrong") : "") });
     if (!isAnswered) {
@@ -935,19 +954,16 @@ function render() {
     }
     main.appendChild(card);
 
-    if (isAnswered || true) {
-      const grid = el("div", { class: "opt-grid" });
-      state.quiz.options.forEach((opt, i) => {
-        let cls = "opt-btn";
-        if (isAnswered) {
-          if (opt.hanzi === current.hanzi) cls += " correct";
-          else if (i === state.quiz.selected) cls += " wrong";
-        }
-        grid.appendChild(el("button", { class: cls, onclick: () => answerQuiz(i) }, opt.meaning));
-      });
-      main.appendChild(grid);
-    }
-
+    const grid = el("div", { class: "opt-grid" });
+    state.quiz.options.forEach((opt, i) => {
+      let cls = "opt-btn";
+      if (isAnswered) {
+        if (opt.hanzi === current.hanzi) cls += " correct";
+        else if (i === state.quiz.selected) cls += " wrong";
+      }
+      grid.appendChild(el("button", { class: cls, onclick: () => answerQuiz(i) }, opt.meaning));
+    });
+    main.appendChild(grid);
     main.appendChild(renderVoiceControls());
 
     app.appendChild(header("Quiz", "✓ " + state.quiz.score, () => { state.screen = "menu"; render(); }));
@@ -959,18 +975,13 @@ function render() {
     const main = el("div", { class: "main" });
     main.appendChild(el("input", {
       class: "search-input", type: "text", placeholder: "Buscar por hanzi, pinyin o significado...",
-      value: state.browseSearch,
-      oninput: (e) => { state.browseSearch = e.target.value; render(); }
+      value: state.browseSearch, oninput: (e) => { state.browseSearch = e.target.value; render(); }
     }));
 
     const q = state.browseSearch.toLowerCase();
-    const filtered = state.words.filter(w =>
-      w.hanzi.includes(state.browseSearch) ||
-      w.pinyin.toLowerCase().includes(q) ||
-      w.meaning.toLowerCase().includes(q)
-    );
-
+    const filtered = state.words.filter(w => w.hanzi.includes(state.browseSearch) || w.pinyin.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q));
     const list = el("div");
+
     filtered.forEach(word => {
       const idx = state.words.indexOf(word);
       const wgt = state.weights[idx] || 1;
@@ -993,17 +1004,15 @@ function render() {
       list.appendChild(row);
     });
     if (filtered.length === 0) list.appendChild(el("div", { class: "empty-state" }, "Sin resultados."));
-    main.appendChild(list);
-    main.appendChild(renderVoiceControls());
-
+    main.appendChild(list); main.appendChild(renderVoiceControls());
     app.appendChild(header("Vocabulario", filtered.length.toString(), () => { state.screen = "menu"; render(); }));
     app.appendChild(main);
     return;
   }
 }
 
-init();
+// Inicializar la aplicación mostrando la pantalla de login
+render();
 </script>
 </body>
 </html>
-
