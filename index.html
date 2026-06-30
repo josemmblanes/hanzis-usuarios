@@ -1,1 +1,1009 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Hanzis · Repaso de vocabulario chino</title>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: linear-gradient(135deg, #1a0b2e, #2d1654, #190a35);
+    color: #f0e8fe;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #app { width: 100%; max-width: 700px; display: flex; flex-direction: column; flex: 1; }
+
+  .header {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(192,132,252,0.2);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo { font-size: 20px; font-weight: 700; color: #c084fc; letter-spacing: 2px; text-shadow: 0 0 20px rgba(192,132,252,0.5); }
+  .back-btn {
+    background: rgba(192,132,252,0.15);
+    border: 1px solid rgba(192,132,252,0.4);
+    color: #c084fc;
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .main { flex: 1; width: 100%; padding: 20px 16px 48px; box-sizing: border-box; }
+
+  /* Selección de cursos */
+  .course-btn {
+    width: 100%; max-width: 380px;
+    background: rgba(255,255,255,0.04);
+    border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 18px 22px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    color: #f0e8fe;
+    transition: all 0.2s;
+    margin: 0 auto 12px auto;
+  }
+  .course-btn.active { background: rgba(192,132,252,0.15); border-color: #c084fc; }
+  .checkbox {
+    width: 24px; height: 24px; border-radius: 6px;
+    border: 2px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #190a35; font-weight: 900;
+    margin-right: 14px;
+  }
+  .checkbox.active { background: #c084fc; border-color: #c084fc; }
+
+  .menu-btn {
+    width: 100%; max-width: 380px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(192,132,252,0.25);
+    border-radius: 16px;
+    padding: 18px 22px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 16px;
+    text-align: left; color: #f0e8fe;
+    margin: 0 auto 12px auto;
+  }
+  .menu-btn:hover { background: rgba(192,132,252,0.1); border-color: rgba(192,132,252,0.6); }
+  .menu-icon { font-size: 32px; }
+  .menu-title { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .menu-desc { font-size: 12px; color: rgba(240,232,254,0.45); }
+
+  .primary-btn {
+    background: linear-gradient(135deg,#c084fc,#9333ea);
+    border: none; color: #190a35;
+    border-radius: 14px; padding: 16px 40px;
+    font-weight: 800; font-size: 16px;
+    cursor: pointer; width: 100%; max-width: 380px;
+    display: block; margin: 12px auto 0 auto;
+  }
+  .primary-btn:disabled { background: rgba(255,255,255,0.05); color: rgba(240,232,254,0.3); cursor: not-allowed; }
+
+  .center-col { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .hero-emoji { font-size: 56px; margin-bottom: 6px; text-align: center; }
+  .hero-label { font-size: 20px; font-weight: 300; color: rgba(240,232,254,0.8); letter-spacing: 1px; text-align: center; }
+  .hero-sub { font-size: 12px; color: rgba(240,232,254,0.4); margin-top: 4px; text-align: center; }
+
+  /* Flashcard */
+  .flashcard {
+    background: linear-gradient(135deg,rgba(192,132,252,0.1),rgba(255,255,255,0.03));
+    border: 1px solid rgba(192,132,252,0.35);
+    border-radius: 24px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-height: 230px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .flashcard.flipped { background: linear-gradient(135deg,rgba(39,174,96,0.18),rgba(39,174,96,0.04)); border-color: rgba(39,174,96,0.5); }
+  .hanzi-big { font-size: 56px; line-height: 1; }
+  .pinyin-text { font-size: 18px; color: #c084fc; letter-spacing: 2px; }
+  .meaning-text { font-size: 14px; color: rgba(240,232,254,0.9); text-align: center; max-width: 100%; line-height: 1.5; padding: 0 8px; }
+  .hint-text { font-size: 11px; color: rgba(240,232,254,0.3); text-align: center; }
+
+  .row-controls { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; width: 100%; }
+  .ctrl-btn {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+    color: #f0e8fe; border-radius: 12px; padding: 12px 20px; cursor: pointer; font-size: 18px;
+  }
+  .speak-btn {
+    background: linear-gradient(135deg,#9333ea,#7c3aed); border: none; color: white;
+    border-radius: 12px; padding: 12px 24px; cursor: pointer; font-size: 15px; font-weight: 700; flex: 1; max-width: 240px;
+  }
+  .toggle-btn {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+    color: #f0e8fe; border-radius: 10px; padding: 8px 16px; cursor: pointer; font-size: 13px;
+  }
+  .toggle-btn.active { background: rgba(192,132,252,0.15); border-color: rgba(192,132,252,0.5); }
+
+  /* Controles de Voz inferiores */
+  .voice-controls-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(192, 132, 252, 0.15);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 10px;
+    width: 100%;
+    max-width: 380px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .voice-control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 10px;
+  }
+  .voice-control-row:last-child { margin-bottom: 0; }
+  .voice-label { font-size: 12px; color: rgba(240, 232, 254, 0.5); }
+  .voice-select {
+    background: #251343;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    color: #f0e8fe;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    flex: 1;
+    max-width: 240px;
+  }
+  .speed-container { display: flex; align-items: center; gap: 10px; flex: 1; max-width: 240px; }
+  .speed-slider {
+    flex: 1;
+    accent-color: #c084fc;
+    cursor: pointer;
+  }
+  .speed-val { font-size: 12px; color: #c084fc; font-weight: bold; min-width: 40px; text-align: right; }
+
+  /* Quiz */
+  .progress-text { font-size: 11px; color: rgba(240,232,254,0.4); margin-bottom: 5px; text-align: center; }
+  .progress-bar-bg { background: rgba(255,255,255,0.07); border-radius: 8px; height: 5px; margin-bottom: 16px; }
+  .progress-bar-fill { background: linear-gradient(90deg,#c084fc,#9333ea); border-radius: 8px; height: 5px; transition: width 0.4s; }
+
+  .quiz-card {
+    background: rgba(192,132,252,0.06);
+    border: 1px solid rgba(192,132,252,0.25);
+    border-radius: 20px;
+    padding: 24px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    transition: border-color 0.3s;
+  }
+  .quiz-card.correct { border-color: rgba(39,174,96,0.6); }
+  .quiz-card.wrong { border-color: rgba(231,76,60,0.5); }
+
+  .big-play-btn {
+    background: linear-gradient(135deg,#9333ea,#7c3aed); border: none; color: white;
+    border-radius: 50%; width: 76px; height: 76px; cursor: pointer; font-size: 26px;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto;
+    box-shadow: 0 0 28px rgba(147,51,234,0.5);
+  }
+
+  .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt-btn {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #f0e8fe;
+    border-radius: 14px; padding: 14px 10px; cursor: pointer; font-size: 13px; text-align: center;
+    transition: all 0.3s; font-weight: 500; line-height: 1.4; min-height: 64px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .opt-btn.correct { background: rgba(39,174,96,0.2); border-color: #27ae60; color: #5dfc8a; }
+  .opt-btn.wrong { background: rgba(231,76,60,0.15); border-color: #e74c3c; color: #ff8080; }
+
+  /* Filas de Vocabulario para iPhone/Móviles */
+  .search-input {
+    width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(192,132,252,0.3);
+    border-radius: 12px; padding: 12px 16px; color: #f0e8fe; font-size: 14px;
+    box-sizing: border-box; margin-bottom: 16px; outline: none;
+  }
+  .search-input::placeholder { color: rgba(240,232,254,0.4); }
+
+  .word-row {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 16px; 
+    display: flex; flex-direction: row; align-items: center; justify-content: space-between; 
+    gap: 12px; margin-bottom: 12px; width: 100%;
+  }
+  .word-row.reinforced { border-color: rgba(192,132,252,0.4); }
+  
+  .word-left-block { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+  .word-top-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
+  .word-course-tag { font-size: 14px; color: #b08bf8; font-weight: 700; white-space: nowrap; }
+  
+  /* Ajuste para que el contenedor Hanzi sea clicable con buen tamaño */
+  .word-hanzi { font-size: 32px; display: inline-flex; align-items: center; justify-content: center; font-weight: 500; line-height: 1.1; cursor: pointer; }
+  .word-pinyin { color: #c084fc; font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .word-meaning { font-size: 14px; color: rgba(240,232,254,0.7); line-height: 1.4; word-break: break-word; }
+  
+  .word-right-block { display: flex; flex-direction: column; align-items: center; gap: 8px; justify-content: center; shrink: 0; }
+  .weight-badge { font-size: 10px; color: #c084fc; background: rgba(192,132,252,0.15); border-radius: 4px; padding: 2px 6px; font-weight: 700; }
+  .play-icon-btn {
+    background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; color: white;
+    border-radius: 12px; width: 44px; height: 44px; cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center; transition: transform 0.1s; shrink: 0;
+  }
+  .play-icon-btn:active { transform: scale(0.95); }
+
+  /* NUEVO: Modal estilizado de trazos (Hanzi Writer) */
+  .writer-modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 7, 30, 0.85); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s; padding: 16px;
+  }
+  .writer-modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .writer-modal {
+    background: #22123b; border: 1px solid rgba(192,132,252,0.4);
+    border-radius: 24px; width: 100%; max-width: 340px; padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .writer-modal-header { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+  .writer-modal-title { font-size: 16px; font-weight: 700; color: #c084fc; }
+  .writer-close-btn { background: transparent; border: none; color: rgba(240,232,254,0.5); font-size: 22px; cursor: pointer; }
+  
+  /* Selector de pestañas para palabras compuestas (varios caracteres) */
+  .writer-tabs { display: flex; gap: 6px; width: 100%; overflow-x: auto; padding-bottom: 4px; justify-content: center; }
+  .writer-tab {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #f0e8fe; border-radius: 8px; padding: 6px 12px; font-size: 16px; cursor: pointer;
+  }
+  .writer-tab.active { background: rgba(192,132,252,0.25); border-color: #c084fc; color: white; font-weight: 700; }
+
+  /* Lienzo del SVG */
+  .writer-canvas-holder {
+    background: #190a35; border: 1px solid rgba(192,132,252,0.2); border-radius: 16px;
+    width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .writer-controls { display: flex; gap: 10px; width: 100%; }
+  .writer-btn {
+    flex: 1; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; text-align: center;
+  }
+  .writer-btn-anim { background: #9333ea; color: white; }
+  .writer-btn-quiz { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #f0e8fe; }
+
+  .empty-state { text-align: center; color: rgba(240,232,254,0.4); padding: 40px 20px; font-size: 14px; }
+  .footer-link {
+    background: transparent; border: 1px solid rgba(255,255,255,0.1); color: rgba(240,232,254,0.3);
+    border-radius: 8px; padding: 6px 16px; cursor: pointer; font-size: 11px; display: block; margin: 16px auto 0 auto;
+  }
+  .warning-text { font-size: 12px; color: rgba(192,132,252,0.7); margin-top: 4px; text-align: center; }
+  .credit-text { font-size: 11px; color: rgba(240,232,254,0.35); text-align: center; margin-top: 14px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<div id="writer-overlay" class="writer-modal-overlay" onclick="closeStrokeModal(event)">
+  <div class="writer-modal" onclick="event.stopPropagation()">
+    <div class="writer-modal-header">
+      <span class="writer-modal-title">Orden de trazos</span>
+      <button class="writer-close-btn" onclick="closeStrokeModal(null)">✕</button>
+    </div>
+    <div id="writer-tabs-container" class="writer-tabs"></div>
+    <div class="writer-canvas-holder">
+      <div id="writer-target"></div>
+    </div>
+    <div class="writer-controls">
+      <button class="writer-btn writer-btn-anim" onclick="triggerStrokeAnim()">🎬 Animar</button>
+      <button class="writer-btn writer-btn-quiz" onclick="triggerStrokeQuiz()">✍ Practice</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COURSE_FILES = [
+  { id: "HSK1",   file: "data/HSK1.json",   label: "Curso 1" },
+  { id: "HSK2",   file: "data/HSK2.json",   label: "Curso 2" },
+  { id: "HSK3_1", file: "data/HSK3_1.json", label: "Curso 3 上" },
+  { id: "HSK3_2", file: "data/HSK3_2.json", label: "Curso 3 下" },
+  { id: "HSK4_1", file: "data/HSK4_1.json", label: "Curso 4 上" },
+  { id: "HSK4_2", file: "data/HSK4_2.json", label: "Curso 4 中" },
+  { id: "HSK4_3", file: "data/HSK4_3.json", label: "Curso 4 下" }
+];
+
+const COURSE_LEVEL_LABELS = {
+  "HSK1": "HSK 1",
+  "HSK2": "HSK 2",
+  "HSK3_1": "HSK 3",
+  "HSK3_2": "HSK 3",
+  "HSK4_1": "HSK 4",
+  "HSK4_2": "HSK 4",
+  "HSK4_3": "HSK 4"
+};
+
+const TONE_MAP = {
+  'ā':1,'ē':1,'ī':1,'ō':1,'ū':1,'ǖ':1,
+  'á':2,'é':2,'í':2,'ó':2,'ú':2,'ǘ':2,
+  'ǎ':3,'ě':3,'ǐ':3,'ǒ':3,'ǔ':3,'ǚ':3,
+  'à':4,'è':4,'ì':4,'ò':4,'ù':4,'ǜ':4,
+};
+
+const TONE_COLORS = { "1":"#ff2a2a","2":"#ffb000","3":"#27ae60","4":"#2980b9","0":"#a78bfa" };
+
+function getToneOfSyllable(syll) {
+  for (const ch of syll) {
+    if (TONE_MAP[ch] !== undefined) return TONE_MAP[ch];
+  }
+  return 0;
+}
+
+function computeTone(hanzi, pinyin) {
+  const clean = (pinyin || "").replace(/[?？！!…,，.。]/g, "").trim();
+  const syllables = clean.split(/\s+/).filter(Boolean);
+  const nChars = (hanzi || "").length;
+  let tones = syllables.map(getToneOfSyllable);
+  if (tones.length === 0) tones = [0];
+  if (tones.length < nChars) {
+    while (tones.length < nChars) tones.push(tones[tones.length - 1]);
+  } else if (tones.length > nChars && nChars > 0) {
+    tones = tones.slice(0, nChars);
+  }
+  return tones.join("-");
+}
+
+function getToneColor(tone) { return TONE_COLORS[tone] || "#f0f0f0"; }
+
+let currentExternalAudio = null;
+let selectedVoiceType = localStorage.getItem("hanzi-voice-type") || "youdao";
+let selectedVoiceSpeed = parseFloat(localStorage.getItem("hanzi-voice-speed") || "1.0");
+const VOICE_SAMPLE_WORD = "您好";
+
+function speak(text) {
+  if (!text) return;
+  if (typeof speechSynthesis !== 'undefined') { speechSynthesis.cancel(); }
+  if (currentExternalAudio) { currentExternalAudio.pause(); currentExternalAudio.currentTime = 0; }
+
+  if (selectedVoiceType === "youdao") {
+    const url = "https://dict.youdao.com/dictvoice?audio=" + encodeURIComponent(text) + "&le=zh";
+    currentExternalAudio = new Audio(url);
+    currentExternalAudio.play().catch(() => {});
+    return;
+  }
+
+  if (typeof SpeechSynthesisUtterance !== 'undefined') {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = selectedVoiceSpeed;
+    const zhVoices = speechSynthesis.getVoices().filter(v => 
+      v.lang.toLowerCase().startsWith('zh-cn') || 
+      v.lang.toLowerCase().startsWith('zh_cn') ||
+      v.lang.toLowerCase().includes('zh')
+    );
+    if (zhVoices.length > 0) {
+      if (selectedVoiceType === "fluida" && zhVoices[0]) utterance.voice = zhVoices[0];
+      else if (selectedVoiceType === "energica" && zhVoices[1]) utterance.voice = zhVoices[1];
+      else if (selectedVoiceType === "locutor" && zhVoices[2]) utterance.voice = zhVoices[2];
+      else utterance.voice = zhVoices[0];
+    }
+    speechSynthesis.speak(utterance);
+  }
+}
+
+if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); };
+}
+
+const STORAGE_KEY = "hanzis-weights";
+
+function loadWeights() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function saveWeights(weights) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(weights)); } catch (e) {}
+}
+
+const state = {
+  screen: "loading",        
+  allWords: [],              
+  availableCourses: [],       
+  selectedCourses: [],
+  selectedTopic: null,
+  words: [],                 
+  persistedWeights: {},      
+  weights: {},                
+  shuffled: [],
+  cardIndex: 0,
+  flipped: false,
+  showPinyin: true,
+  browseSearch: "",
+  quiz: { queue: [], pos: 0, options: [], selected: null, score: 0, total: 0, done: false },
+};
+
+function wordKey(w) { return w.hanzi + "|" + w.pinyin; }
+
+async function loadAllCourses() {
+  const results = [];
+  for (const course of COURSE_FILES) {
+    try {
+      const res = await fetch(course.file);
+      if (!res.ok) continue; 
+      const data = await res.json();
+      data.forEach(entry => {
+        entry._course = course.id;
+        entry.tone = computeTone(entry.hanzi, entry.pinyin);
+      });
+      results.push({ ...course, words: data });
+    } catch (e) { continue; }
+  }
+  return results;
+}
+
+async function init() {
+  state.persistedWeights = loadWeights();
+  const courses = await loadAllCourses();
+  state.availableCourses = courses;
+  state.allWords = courses.flatMap(c => c.words);
+  state.selectedCourses = courses.map(c => c.id); 
+  state.screen = state.availableCourses.length ? "course-select" : "error";
+  render();
+}
+
+function getFilteredWords() {
+  return state.allWords.filter(w => state.selectedCourses.includes(w._course));
+}
+
+function buildQueue(words, weights) {
+  const queue = [];
+  words.forEach((_, i) => {
+    const reps = Math.max(1, Math.min(weights[i] || 1, 5));
+    for (let r = 0; r < reps; r++) queue.push(i);
+  });
+  return queue.sort(() => Math.random() - 0.5);
+}
+
+function genOptions(words, idx) {
+  const word = words[idx];
+  const pool = words.filter(w => w.hanzi !== word.hanzi);
+  const wrong = [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+  return [...wrong, word].sort(() => Math.random() - 0.5);
+}
+
+function getAvailableTopics() {
+  const courseWords = getFilteredWords();
+  const set = new Set();
+  courseWords.forEach(w => { if (w.tema) set.add(w.tema); });
+  return Array.from(set).sort();
+}
+
+function getTopicFilteredWords(topic) {
+  const base = getFilteredWords();
+  return topic ? base.filter(w => w.tema === topic) : base;
+}
+
+function startStudyWithTopic(topic) {
+  state.selectedTopic = topic;
+  state.words = getTopicFilteredWords(topic);
+  state.shuffled = [...state.words].sort(() => Math.random() - 0.5);
+  state.weights = {};
+  state.words.forEach((w, i) => { state.weights[i] = state.persistedWeights[wordKey(w)] || 1; });
+  state.cardIndex = 0;
+  state.screen = "menu";
+  render();
+}
+
+function startQuiz() {
+  const words = state.words;
+  const len = Math.min(20, words.length);
+  const q = buildQueue(words, state.weights).slice(0, len);
+  state.quiz = { queue: q, pos: 0, options: genOptions(words, q[0]), selected: null, score: 0, total: 0, done: false };
+  state.screen = "quiz";
+  render();
+}
+
+function answerQuiz(optIdx) {
+  if (state.quiz.selected !== null) return;
+  const words = state.words;
+  const wordIdx = state.quiz.queue[state.quiz.pos];
+  const current = words[wordIdx];
+  const opt = state.quiz.options[optIdx];
+  const correct = opt.hanzi === current.hanzi;
+  state.quiz.selected = optIdx;
+
+  if (correct) {
+    speak(current.hanzi);
+    state.quiz.score++;
+    state.weights[wordIdx] = Math.max(1, (state.weights[wordIdx] || 1) - 1);
+  } else {
+    state.weights[wordIdx] = Math.min(5, (state.weights[wordIdx] || 1) + 2);
+  }
+  state.persistedWeights[wordKey(current)] = state.weights[wordIdx];
+  saveWeights(state.persistedWeights);
+
+  state.quiz.total++;
+  render();
+
+  const quizLen = Math.min(20, words.length);
+  setTimeout(() => {
+    const next = state.quiz.pos + 1;
+    if (next >= state.quiz.queue.length || state.quiz.total >= quizLen) {
+      state.quiz.done = true;
+    } else {
+      state.quiz.pos = next;
+      state.quiz.options = genOptions(words, state.quiz.queue[next]);
+      state.quiz.selected = null;
+    }
+    render();
+  }, 1600);
+}
+
+/* LÓGICA DE MANEJO DE HANZI WRITER (TRAZOS) */
+let currentWriterInstance = null;
+let currentActiveChar = "";
+
+function openStrokeModal(hanziString) {
+  if (!hanziString) return;
+  const characters = hanziString.replace(/[^\u4e00-\u9fa5]/g, "").split("");
+  if (characters.length === 0) return;
+
+  const overlay = document.getElementById("writer-overlay");
+  const tabsContainer = document.getElementById("writer-tabs-container");
+  tabsContainer.innerHTML = "";
+
+  characters.forEach((char, index) => {
+    const tab = document.createElement("button");
+    tab.className = "writer-tab" + (index === 0 ? " active" : "");
+    tab.textContent = char;
+    tab.onclick = () => {
+      document.querySelectorAll(".writer-tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      loadHanziWriterChar(char);
+    };
+    tabsContainer.appendChild(tab);
+  });
+
+  overlay.classList.add("open");
+  loadHanziWriterChar(characters[0]);
+}
+
+function closeStrokeModal(e) {
+  if (e) e.stopPropagation();
+  document.getElementById("writer-overlay").classList.remove("open");
+  document.getElementById("writer-target").innerHTML = "";
+  currentWriterInstance = null;
+}
+
+function loadHanziWriterChar(char) {
+  currentActiveChar = char;
+  document.getElementById("writer-target").innerHTML = "";
+  
+  currentWriterInstance = HanziWriter.create('writer-target', char, {
+    width: 180,
+    height: 180,
+    padding: 15,
+    strokeColor: '#c084fc',
+    radicalColor: '#f43f5e',
+    outlineColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#190a35',
+    showOutline: true,
+    delayBetweenLoops: 1000
+  });
+  
+  currentWriterInstance.animateCharacter();
+}
+
+function triggerStrokeAnim() {
+  if (currentWriterInstance) {
+    currentWriterInstance.cancelQuiz();
+    currentWriterInstance.animateCharacter();
+  }
+}
+
+function triggerStrokeQuiz() {
+  if (currentWriterInstance) {
+    currentWriterInstance.quiz();
+  }
+}
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === null || v === false || v === undefined) continue; 
+    if (k === "class") node.className = v;
+    else if (k === "onclick") node.addEventListener("click", v);
+    else if (k === "oninput") node.addEventListener("input", v);
+    else if (k === "onchange") node.addEventListener("change", v);
+    else if (k === "html") node.innerHTML = v;
+    else node.setAttribute(k, v);
+  }
+  (Array.isArray(children) ? children : [children]).forEach(c => {
+    if (c == null) return;
+    if (typeof c === "string") node.appendChild(document.createTextNode(c));
+    else node.appendChild(c);
+  });
+  return node;
+}
+
+function header(title, rightText, backFn) {
+  return el("div", { class: "header" }, [
+    backFn ? el("button", { class: "back-btn", onclick: backFn }, "← Atrás") : el("span"),
+    el("span", { class: "logo" }, title),
+    el("span", { style: "font-size:13px;color:rgba(240,232,254,0.5)" }, rightText || ""),
+  ]);
+}
+
+function coloredHanziEl(hanzi, tone, size) {
+  const tones = tone.split("-");
+  const wrap = el("div", { class: "word-hanzi", style: `font-size:${size}px`, onclick: (e) => { e.stopPropagation(); openStrokeModal(hanzi); } });
+  hanzi.split("").forEach((ch, i) => {
+    wrap.appendChild(el("span", { style: `color:${getToneColor(tones[i] || tones[0])}` }, ch));
+  });
+  return wrap;
+}
+
+function renderVoiceControls() {
+  const selectVoz = el("select", {
+    class: "voice-select",
+    onchange: (e) => {
+      selectedVoiceType = e.target.value;
+      localStorage.setItem("hanzi-voice-type", selectedVoiceType);
+      speak(VOICE_SAMPLE_WORD);
+    }
+  }, [
+    el("option", { value: "youdao", selected: selectedVoiceType === "youdao" ? "selected" : null }, "👩‍💼 Voz Estándar"),
+    el("option", { value: "fluida", selected: selectedVoiceType === "fluida" ? "selected" : null }, "👩 Voz Fluida"),
+    el("option", { value: "energica", selected: selectedVoiceType === "energica" ? "selected" : null }, "👨 Voz Enérgica"),
+    el("option", { value: "locutor", selected: selectedVoiceType === "locutor" ? "selected" : null }, "👨‍💼 Voz Locutor")
+  ]);
+
+  const speedValLabel = el("span", { class: "speed-val" }, selectedVoiceSpeed.toFixed(2) + "x");
+  const sliderSpeed = el("input", {
+    type: "range", min: "0.5", max: "2.0", step: "0.05", class: "speed-slider",
+    value: selectedVoiceSpeed.toString(),
+    oninput: (e) => {
+      selectedVoiceSpeed = parseFloat(e.target.value);
+      speedValLabel.textContent = selectedVoiceSpeed.toFixed(2) + "x";
+      localStorage.setItem("hanzi-voice-speed", selectedVoiceSpeed.toString());
+    },
+    onchange: () => speak(VOICE_SAMPLE_WORD)
+  });
+
+  return el("div", { class: "voice-controls-panel" }, [
+    el("div", { class: "voice-control-row" }, [
+      el("span", { class: "voice-label" }, "Tipo de voz:"),
+      selectVoz
+    ]),
+    el("div", { class: "voice-control-row" }, [
+      el("span", { class: "voice-label" }, "Velocidad:"),
+      el("div", { class: "speed-container" }, [sliderSpeed, speedValLabel])
+    ])
+  ]);
+}
+
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  if (state.screen === "loading") {
+    app.appendChild(el("div", { class: "main center-col", style: "padding-top:80px" },
+      el("div", { style: "color:rgba(240,232,254,0.5);font-size:14px" }, "Cargando vocabulario…")
+    ));
+    return;
+  }
+
+  if (state.screen === "error") {
+    app.appendChild(el("div", { class: "main center-col", style: "padding-top:80px" },
+      el("div", { style: "color:rgba(240,232,254,0.6);font-size:14px;text-align:center" },
+        "No se pudo cargar ningún fichero de vocabulario. Revisa que existan en /data/ y que los nombres coincidan exactamente.")
+    ));
+    return;
+  }
+
+  if (state.screen === "course-select") {
+    const main = el("div", { class: "main center-col" });
+    main.appendChild(el("div", { class: "hero-emoji" }, "选择"));
+    main.appendChild(el("div", { class: "hero-label" }, "¿Qué curso quieres repasar?"));
+    main.appendChild(el("div", { class: "hero-sub" }, "Puedes elegir uno o varios"));
+
+    const list = el("div", { style: "width:100%" });
+    state.availableCourses.forEach(c => {
+      const active = state.selectedCourses.includes(c.id);
+      const btn = el("button", {
+        class: "course-btn" + (active ? " active" : ""),
+        onclick: () => {
+          state.selectedCourses = active
+            ? state.selectedCourses.filter(x => x !== c.id)
+            : [...state.selectedCourses, c.id];
+          render();
+        }
+      }, [
+        el("div", { style: "display:flex;align-items:center" }, [
+          el("div", { class: "checkbox" + (active ? " active" : "") }, active ? "✓" : ""),
+          el("div", { style: "font-size:17px;font-weight:700" }, c.label),
+        ]),
+        el("div", { style: "font-size:12px;color:rgba(240,232,254,0.45)" }, c.words.length + " palabras"),
+      ]);
+      list.appendChild(btn);
+    });
+    main.appendChild(list);
+
+    main.appendChild(renderVoiceControls());
+    
+    // Crédito añadido de forma dinámica en la parte inferior de la pantalla inicial
+    main.appendChild(el("div", { class: "credit-text" }, "por obra de José Mª Martínez Blanes"));
+
+    const totalSel = state.allWords.filter(w => state.selectedCourses.includes(w._course)).length;
+    main.appendChild(el("button", {
+      class: "primary-btn",
+      disabled: state.selectedCourses.length === 0 ? "disabled" : null,
+      onclick: () => {
+        if (state.selectedCourses.length === 0) return;
+        state.selectedTopic = null;
+        state.screen = "topic-select";
+        render();
+      }
+    }, state.selectedCourses.length === 0 ? "Elige al menos un curso" : `Continuar (${totalSel} palabras)`));
+
+    app.appendChild(header("Hanzis", state.allWords.length + " palabras totales"));
+    app.appendChild(main);
+    return;
+  }
+
+  if (state.screen === "topic-select") {
+    const main = el("div", { class: "main center-col" });
+    main.appendChild(el("div", { class: "hero-emoji" }, "主题"));
+    main.appendChild(el("div", { class: "hero-label" }, "¿Qué tema quieres repasar?"));
+    main.appendChild(el("div", { class: "hero-sub" }, "Elige un tema o repasa el bloque completo"));
+
+    const courseWords = getFilteredWords();
+    const topics = getAvailableTopics();
+
+    const list = el("div", { style: "width:100%" });
+
+    list.appendChild(el("button", {
+      class: "menu-btn",
+      onclick: () => startStudyWithTopic(null)
+    }, [
+      el("span", { class: "menu-icon" }, "📚"),
+      el("div", {}, [
+        el("div", { class: "menu-title" }, "Todos los temas"),
+        el("div", { class: "menu-desc" }, courseWords.length + " palabras · curso completo"),
+      ]),
+    ]));
+
+    topics.forEach(tema => {
+      const count = courseWords.filter(w => w.tema === tema).length;
+      list.appendChild(el("button", {
+        class: "menu-btn",
+        onclick: () => startStudyWithTopic(tema)
+      }, [
+        el("span", { class: "menu-icon" }, "🏷"),
+        el("div", {}, [
+          el("div", { class: "menu-title" }, tema),
+          el("div", { class: "menu-desc" }, count + " palabras"),
+        ]),
+      ]));
+    });
+
+    if (topics.length === 0) {
+      list.appendChild(el("div", { class: "warning-text" }, "Los cursos elegidos no tienen el campo \"tema\" en sus datos · usa \"Todos los temas\""));
+    }
+
+    main.appendChild(list);
+
+    app.appendChild(header("Hanzis", courseWords.length + " palabras", () => { state.screen = "course-select"; render(); }));
+    app.appendChild(main);
+    return;
+  }
+
+  if (state.screen === "menu") {
+    const main = el("div", { class: "main center-col" });
+    main.appendChild(el("div", { style: "font-size:14px;color:#c084fc;letter-spacing:1px;text-align:center" },
+      state.selectedCourses.map(id => state.availableCourses.find(c => c.id === id)?.label).join(" · ")));
+    main.appendChild(el("div", { class: "hero-emoji" }, "中文"));
+    main.appendChild(el("div", { class: "hero-label" }, "Repaso de vocabulario"));
+
+    const items = [
+      { id: "flashcard", icon: "🎴", title: "Tarjetas Flash", desc: "Escucha y aprende con tarjetas" },
+      { id: "quiz", icon: "🎯", title: "Quiz con Refuerzo", desc: "Tus fallos se recuerdan entre sesiones" },
+      { id: "browse", icon: "📖", title: "Vocabulario completo", desc: "Explora y escucha todas las palabras" },
+    ];
+    items.forEach(item => {
+      main.appendChild(el("button", {
+        class: "menu-btn",
+        onclick: () => { state.screen = item.id; if (item.id === "quiz") startQuiz(); else render(); }
+      }, [
+        el("span", { class: "menu-icon" }, item.icon),
+        el("div", {}, [
+          el("div", { class: "menu-title" }, item.title),
+          el("div", { class: "menu-desc" }, item.desc),
+        ]),
+      ]));
+    });
+
+    const reinforced = Object.values(state.weights).filter(w => w > 1).length;
+    if (reinforced > 0) {
+      main.appendChild(el("div", { class: "warning-text" }, `⚠ ${reinforced} palabra(s) con refuerzo pendiente (guardado)`));
+    }
+
+    main.appendChild(el("button", {
+      class: "footer-link",
+      onclick: () => {
+        state.persistedWeights = {};
+        saveWeights({});
+        state.words.forEach((_, i) => { state.weights[i] = 1; });
+        render();
+      }
+    }, "Borrar progreso guardado"));
+
+    app.appendChild(header("Hanzis", state.words.length + " palabras", () => { state.screen = "topic-select"; render(); }));
+    app.appendChild(main);
+    return;
+  }
+
+  if (state.screen === "flashcard") {
+    const word = state.shuffled[state.cardIndex];
+    const main = el("div", { class: "main" });
+    if (!word) { main.appendChild(el("div", { class: "empty-state" }, "No hay palabras.")); app.appendChild(main); return; }
+
+    const card = el("div", { class: "flashcard" + (state.flipped ? " flipped" : ""), onclick: () => { state.flipped = !state.flipped; render(); } });
+    card.appendChild(coloredHanziEl(word.hanzi, word.tone, 56));
+    if (state.showPinyin || state.flipped) card.appendChild(el("div", { class: "pinyin-text" }, word.pinyin));
+    if (state.flipped) {
+      card.appendChild(el("div", { class: "meaning-text" }, word.meaning));
+    } else {
+      card.appendChild(el("div", { class: "hint-text" }, "Toca para ver el significado o el Hanzi para ver los trazos"));
+    }
+
+    const controls = el("div", { class: "row-controls" }, [
+      el("button", { class: "ctrl-btn", onclick: () => { state.cardIndex = (state.cardIndex - 1 + state.shuffled.length) % state.shuffled.length; state.flipped = false; render(); } }, "←"),
+      el("button", { class: "speak-btn", onclick: () => speak(word.hanzi) }, "🔊 Escuchar"),
+      el("button", { class: "ctrl-btn", onclick: () => { state.cardIndex = (state.cardIndex + 1) % state.shuffled.length; state.flipped = false; render(); } }, "→"),
+    ]);
+
+    const pinyinToggle = el("div", { style: "display:flex;justify-content:center" },
+      el("button", { class: "toggle-btn" + (state.showPinyin ? " active" : ""), onclick: () => { state.showPinyin = !state.showPinyin; render(); } },
+        state.showPinyin ? "🔤 Ocultar Pinyin" : "🔤 Mostrar Pinyin")
+    );
+
+    main.appendChild(card);
+    main.appendChild(controls);
+    main.appendChild(pinyinToggle);
+    main.appendChild(renderVoiceControls());
+
+    app.appendChild(header("Tarjetas Flash", (state.cardIndex + 1) + "/" + state.shuffled.length, () => { state.screen = "menu"; render(); }));
+    app.appendChild(main);
+    return;
+  }
+
+  if (state.screen === "quiz") {
+    const main = el("div", { class: "main" });
+    const words = state.words;
+
+    if (state.quiz.done) {
+      const pct = state.quiz.total ? state.quiz.score / state.quiz.total : 0;
+      const emoji = pct >= 0.8 ? "🏆" : pct >= 0.5 ? "👍" : "💪";
+      const reinforced = Object.values(state.weights).filter(w => w > 1).length;
+      main.appendChild(el("div", { class: "center-col", style: "padding-top:48px" }, [
+        el("div", { style: "font-size:64px" }, emoji),
+        el("div", { style: "font-size:46px;font-weight:700;color:#c084fc" }, [
+          state.quiz.score.toString(),
+          el("span", { style: "font-size:22px;color:rgba(240,232,254,0.4)" }, "/" + state.quiz.total),
+        ]),
+        reinforced > 0 ? el("div", { style: "background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.3);border-radius:12px;padding:10px 20px;font-size:13px;color:#c084fc" },
+          `${reinforced} palabra(s) con refuerzo guardado · seguirán apareciendo más, incluso si cierras la app`) : null,
+        el("button", { class: "primary-btn", style: "max-width:300px", onclick: startQuiz }, "Otro intento"),
+        el("button", { class: "footer-link", onclick: () => { state.screen = "menu"; render(); } }, "Menú"),
+      ]));
+      main.appendChild(renderVoiceControls());
+      app.appendChild(header("Resultado", "", null));
+      app.appendChild(main);
+      return;
+    }
+
+    const wordIdx = state.quiz.queue[state.quiz.pos];
+    const current = words[wordIdx];
+    const isAnswered = state.quiz.selected !== null;
+    const wasCorrect = isAnswered && state.quiz.options[state.quiz.selected].hanzi === current.hanzi;
+    const quizLen = Math.min(20, words.length);
+
+    main.appendChild(el("div", { class: "progress-text" }, `Pregunta ${state.quiz.total + 1} de ${quizLen}`));
+    main.appendChild(el("div", { class: "progress-bar-bg" },
+      el("div", { class: "progress-bar-fill", style: `width:${(state.quiz.total / quizLen) * 100}%` })));
+
+    const card = el("div", { class: "quiz-card" + (isAnswered ? (wasCorrect ? " correct" : " wrong") : "") });
+    if (!isAnswered) {
+      card.appendChild(el("div", { style: "font-size:11px;color:rgba(240,232,254,0.4);margin-bottom:16px;letter-spacing:1px" }, "Escucha y elige el significado"));
+      card.appendChild(el("button", { class: "big-play-btn", onclick: () => speak(current.hanzi) }, "🔊"));
+    } else {
+      card.appendChild(el("div", { style: "font-size:11px;color:rgba(240,232,254,0.4);letter-spacing:1px" }, wasCorrect ? "✓ Correcto" : "✗ Incorrecto"));
+      card.appendChild(coloredHanziEl(current.hanzi, current.tone, 50));
+      card.appendChild(el("div", { style: "font-size:16px;color:#c084fc" }, current.pinyin));
+      card.appendChild(el("div", { style: "font-size:13px;color:rgba(240,232,254,0.8);line-height:1.4;max-width:480px" }, current.meaning));
+      card.appendChild(el("button", { style: "margin-top:4px;background:rgba(147,51,234,0.3);border:1px solid rgba(192,132,252,0.4);color:#c084fc;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:12px", onclick: () => speak(current.hanzi) }, "🔊 Escuchar de nuevo"));
+    }
+    main.appendChild(card);
+
+    if (isAnswered || true) {
+      const grid = el("div", { class: "opt-grid" });
+      state.quiz.options.forEach((opt, i) => {
+        let cls = "opt-btn";
+        if (isAnswered) {
+          if (opt.hanzi === current.hanzi) cls += " correct";
+          else if (i === state.quiz.selected) cls += " wrong";
+        }
+        grid.appendChild(el("button", { class: cls, onclick: () => answerQuiz(i) }, opt.meaning));
+      });
+      main.appendChild(grid);
+    }
+
+    main.appendChild(renderVoiceControls());
+
+    app.appendChild(header("Quiz", "✓ " + state.quiz.score, () => { state.screen = "menu"; render(); }));
+    app.appendChild(main);
+    return;
+  }
+
+  if (state.screen === "browse") {
+    const main = el("div", { class: "main" });
+    main.appendChild(el("input", {
+      class: "search-input", type: "text", placeholder: "Buscar por hanzi, pinyin o significado...",
+      value: state.browseSearch,
+      oninput: (e) => { state.browseSearch = e.target.value; render(); }
+    }));
+
+    const q = state.browseSearch.toLowerCase();
+    const filtered = state.words.filter(w =>
+      w.hanzi.includes(state.browseSearch) ||
+      w.pinyin.toLowerCase().includes(q) ||
+      w.meaning.toLowerCase().includes(q)
+    );
+
+    const list = el("div");
+    filtered.forEach(word => {
+      const idx = state.words.indexOf(word);
+      const wgt = state.weights[idx] || 1;
+      const realLevelText = COURSE_LEVEL_LABELS[word._course] || word._course;
+
+      const row = el("div", { class: "word-row" + (wgt > 1 ? " reinforced" : "") }, [
+        el("div", { class: "word-left-block" }, [
+          el("div", { class: "word-top-meta" }, [
+            el("div", { class: "word-course-tag" }, realLevelText),
+            coloredHanziEl(word.hanzi, word.tone, 32),
+            el("div", { class: "word-pinyin" }, word.pinyin)
+          ]),
+          el("div", { class: "word-meaning" }, word.meaning)
+        ]),
+        el("div", { class: "word-right-block" }, [
+          wgt > 1 ? el("span", { class: "weight-badge" }, "×" + wgt) : null,
+          el("button", { class: "play-icon-btn", onclick: () => speak(word.hanzi) }, "🔊")
+        ])
+      ]);
+      list.appendChild(row);
+    });
+    if (filtered.length === 0) list.appendChild(el("div", { class: "empty-state" }, "Sin resultados."));
+    main.appendChild(list);
+    main.appendChild(renderVoiceControls());
+
+    app.appendChild(header("Vocabulario", filtered.length.toString(), () => { state.screen = "menu"; render(); }));
+    app.appendChild(main);
+    return;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
 
